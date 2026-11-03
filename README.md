@@ -1,97 +1,163 @@
-## ROBrowser Legacy
+# roBrowser
 
-This is a continuation of [roBrowser](https://www.robrowser.com/) expanded with some features. This repo is not directly forked from the original repository due to safety concerns, but it is roBrowser.
+Cliente de Ragnarok Online que roda no navegador (WebGL), baseado no
+[roBrowserLegacy](https://github.com/MrAntares/roBrowserLegacy).
 
-If you wish to discuss anything related to this project, or you want to join, contact us on [Discord](https://discord.gg/8JdHwM4Kqm) or in the [GIT Discussions](https://github.com/MrAntares/roBrowserLegacy/discussions)
+A diferença principal: **uma pasta e uma porta**. O próprio roBrowser lê os arquivos do jogo direto dos
+`.grf`, sem extrair, e faz a ponte com o servidor do jogo. Não é preciso instalar Remote Client nem wsProxy
+à parte.
 
-For info on how to setup the client read the contents of our [Getting Started doc](https://github.com/MrAntares/roBrowserLegacy/blob/master/docs/README.md). For the original branche's docs please visit the https://www.robrowser.com/ site.
+## O que este repositório traz
 
-## DEMO
+- **GRFs lidos direto da pasta `client/`**, sem extrair. Versões 0x200 e 0x300, com nomes em coreano.
+- **Tudo numa porta só:** a página do jogo, os arquivos do cliente (`/client/`) e o proxy WebSocket
+  (`/ws/`), tanto no desenvolvimento (`npm run live`) quanto em produção (`npm start`).
+- **`client/aliases.json`:** diz quais arquivos da pasta `System` o jogo deve ler (`itemInfo`, `mapInfo`,
+  traduções...), sem nomes fixos no código.
+- **Aba de títulos corrigida:** mostra só os títulos que o personagem tem, a partir das conquistas que o
+  servidor envia.
 
-[![Start Demo](https://img.shields.io/badge/%E2%96%B6%20Start%20Demo-Play%20Now-e8b84b?style=for-the-badge&labelColor=cc0000)](https://mrantares.github.io/roBrowserLegacy/master)
+## Requisitos
 
-_Use `<Username>_M` or `<Username>_F` to register a male or a female account on the login screen, or use the Register/Request button to navigate to the server's account registration page._
+- [Node.js](https://nodejs.org/) 22.15 ou mais novo
+- Um servidor de jogo: [rAthena](https://github.com/rathena/rathena) (testado) ou Hercules
+- Os arquivos de um cliente de Ragnarok: `.grf`, `DATA.INI`, `System/`, `data/`, `BGM/`, `AI/`
 
-More live examples:
-
-- [#robrowser-servers on Discord](https://discord.gg/MFtJj9n5Hr)
-- [roBrowserLegacy Servers on Discussions](https://github.com/MrAntares/roBrowserLegacy/discussions/categories/robrowserlegacy-servers)
-
-## Quick Start
+## Instalação
 
 ```bash
-git clone https://github.com/MrAntares/roBrowserLegacy.git
-cd roBrowserLegacy
+git clone https://github.com/KWDe-v/roBrowser.git
+cd roBrowser
 npm install
-npm run live          # Dev server with Vite (opens browser)
-npm run build:all     # Build all applications to dist/Web/
 ```
 
-#### Repo info:
+### 1. Copie o cliente para `client/`
 
-| ![GitHub](https://img.shields.io/github/license/MrAntares/roBrowserLegacy.svg) | ![commit activity](https://img.shields.io/github/commit-activity/w/MrAntares/roBrowserLegacy) | ![GitHub repo size](https://img.shields.io/github/repo-size/MrAntares/roBrowserLegacy.svg) | ![CodeQL](https://img.shields.io/github/actions/workflow/status/MrAntares/roBrowserLegacy/analysis_codeql.yml?label=CodeQL) | ![Build & Tests](https://img.shields.io/github/actions/workflow/status/MrAntares/roBrowserLegacy/build.yml?branch=master&label=Build%20%26%20Tests&logo=vitest) | ![Lint](https://img.shields.io/github/actions/workflow/status/MrAntares/roBrowserLegacy/lint.yml?branch=master&label=Lint&logo=eslint) | ![Format](https://img.shields.io/github/actions/workflow/status/MrAntares/roBrowserLegacy/format.yml?branch=master&label=Format&logo=prettier) |
-| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+```text
+client/
+├── DATA.INI        quais GRFs carregar (o do próprio cliente)
+├── data.grf        sem extrair
+├── Ragnarok.grf
+├── data/           arquivos soltos (traduções...) têm prioridade sobre os GRFs
+├── System/
+├── BGM/
+├── AI/
+└── aliases.json    nomes dos arquivos da pasta System
+```
 
-## Guide
+Os arquivos do jogo nunca vão para o git: tudo dentro de `client/` é ignorado, exceto o `aliases.json`.
 
-Checkout the [getting started guide](docs/README.md)
+### 2. Ajuste o `aliases.json`
 
-## Wiki
+Cada cliente nomeia os arquivos da `System` de um jeito. Liste os que o seu tem:
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/MrAntares/roBrowserLegacy)
+```jsonc
+{
+	"fontPath": "System/Font/",
+	// carrega todos, em ordem
+	"itemInfo": { "all": ["System/iteminfo/iteminfo1.lua", "System/iteminfo/iteminfo2.lua"] },
+	// tenta em ordem e usa o primeiro que existir
+	"mapInfo": ["System/mapInfo_true.lub"],
+	"questInfo": ["System/OngoingQuestInfoList_True.lub"],
+	// lista vazia: não carrega
+	"signBoardTranslation": []
+}
+```
 
-## Tech Stack
+Chave que não aparece usa o nome padrão. Comentários são aceitos. Todas as chaves estão em
+[docs/how-to/client-folder.md](docs/how-to/client-folder.md).
 
-- **ES6 Modules** — Modern `import`/`export` syntax (migrated from AMD/RequireJS)
-- **Vite** — Build tool and dev server (replaced RequireJS optimizer and live-server)
-- **WebGL** — 3D/2D rendering via OpenGL ES 2.0
-- **WebSockets** — Network communication via wsProxy
-- **ESLint + Prettier** — Code quality and formatting
-- **Web Workers** — Background processing for GRF decompression and pathfinding
+### 3. Configure o servidor do jogo
 
-## Remote Client
+Em [applications/browser-examples/demo.html](applications/browser-examples/demo.html), no item de
+`servers`:
 
-Remote Client serves game assets to roBrowser via http by extracting them from their GRFs. You will need to setup a remote client if you want to serve the game assets centrally from your server. roBrowser can use local game assets via the Intro screen by dragging them into the file box.
+| Campo         | O que é                                                  |
+| ------------- | -------------------------------------------------------- |
+| `display`     | Nome mostrado no jogo                                    |
+| `address`     | IP do login-server                                       |
+| `port`        | Porta do login-server (padrão `6900`)                    |
+| `packetver`   | O mesmo `PACKETVER` compilado no servidor (ex. `20211103`) |
+| `renewal`     | `true` para Renewal, `false` para Pre-Renewal            |
+| `langtype`    | Idioma / codificação do cliente                          |
 
-roBrowser can also serve them itself: put the client's GRFs, `DATA.INI` and folders in `client/`, and `npm run live` (or `npm start` in production) serves the game files and the WebSocket proxy on the same port. See [docs/how-to/client-folder.md](docs/how-to/client-folder.md).
+`remoteClient` e `socketProxy` já apontam para este mesmo servidor e não precisam mudar.
 
-The original implementation of the Remote Client is written in PHP:
+## Rodando no seu PC
 
-- [roBrowserLegacy-RemoteClient-PHP](https://github.com/MrAntares/roBrowserLegacy-RemoteClient-PHP)
+Com o rAthena ligado:
 
-Other implementations may arise and when they do we will list them here:
+```bash
+npm run live
+```
 
-- [roBrowserLegacy-RemoteClient-JS](https://github.com/FranciscoWallison/roBrowserLegacy-RemoteClient-JS)
-- [roBrowserLegacy-RemoteClient-Rust](https://github.com/Flux159/roBrowserLegacy-RemoteClient-Rust)
+O jogo abre em `http://localhost:3000/applications/browser-examples/demo.html`.
 
-## WebSocket Proxy
+## Colocando online
 
-The game server uses TCP/IP to communicate with the client, while roBrowser being a web page can't use TCP/IP. We use the WebSocket API to communicate with a proxy server that translates the packets into TCP/IP packets. This server is called wsProxy. You will need to install and configure wsProxy to make roBrowser able to connect to a game server. For more info, please visit the [roBrowserLegacy-wsProxy](https://github.com/MrAntares/roBrowserLegacy-wsProxy) repository.
+```bash
+npm run build -- -O -T -H
+npm start
+```
 
-## Plugins
+O servidor sobe na porta `8000`. As configurações ficam num `Config.local.js` na raiz do projeto, que
+sobrevive a um novo build:
 
-For available plugins and information on how to install them please visit the [roBrowserLegacy-plugins](https://github.com/MrAntares/roBrowserLegacy-plugins) repository.
+```js
+window.ROConfigLocal = {
+	remoteClient: '/client/',
+	skipIntro: true,
+	servers: [
+		{
+			display: 'Meu Servidor',
+			address: '127.0.0.1',
+			port: 6900,
+			version: 55,
+			langtype: 12,
+			packetver: 20211103,
+			renewal: true,
+			packetKeys: false,
+			socketProxy: (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/',
+			remoteClient: '/client/'
+		}
+	]
+};
+```
 
-## Contributing
+Variáveis de ambiente:
 
-See [CONTRIBUTING](./docs/CONTRIBUTING.md)
+| Variável              | Padrão                                         | O que faz                                              |
+| --------------------- | ---------------------------------------------- | ------------------------------------------------------ |
+| `PORT`                | `8000`                                         | Porta do servidor                                      |
+| `CLIENT_PATH`         | `./client`                                     | Pasta do cliente                                       |
+| `CACHE_MB`            | `256`                                          | Memória para os arquivos servidos recentemente         |
+| `WS_ALLOWED_TARGETS`  | `127.0.0.1` e `localhost` nas portas 6900, 6121, 5121 | Servidores que o `/ws/` pode acessar (`ip:porta`, separados por vírgula) |
+| `CLIENT_ENABLESEARCH` | desligado                                      | `true` libera a busca de arquivos (só os visualizadores usam) |
 
-All credits to the original owners/creators and the new ones.
-<a href="https://github.com/MrAntares/roBrowserLegacy/graphs/contributors">
-<img src="https://contrib.rocks/image?repo=MrAntares/roBrowserLegacy" />
-</a>
+`WS_ALLOWED_TARGETS` precisa conter todos os endereços que o rAthena entrega ao jogador: o do login e
+também o `char_ip` e o `map_ip`. Se o rAthena enviar um IP público, coloque esse IP com cada porta.
 
-## Contact
+Com HTTPS, coloque um proxy reverso (nginx, Caddy) na frente e repasse as conexões WebSocket de `/ws/`.
 
-- Join us on [Discord](https://discord.gg/8JdHwM4Kqm)
-- Or in the [GIT Discussions](https://github.com/MrAntares/roBrowserLegacy/discussions)
+## Desenvolvimento
 
-## Star History
+```bash
+npm test          # testes (Vitest)
+npm run lint      # ESLint
+npm run format    # Prettier
+```
 
-<a href="https://www.star-history.com/?repos=MrAntares%2FroBrowserLegacy&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=MrAntares/roBrowserLegacy&type=date&theme=dark&legend=top-left&sealed_token=n-LYAsHxuqeB0pWAcr0VyUok1yv6L_vgDU_o45SAzDD0v8KE-9l9Mqlcr0dcnX606Bg9Yf_Coue-KXc4lhBj_dwAIAVmxloWaG5KiVlETd2asCYPRWu9-RzCKESTbAwZOolsyYjnA-IS6njNlSjYzTJfSDLMmT742KWezS2E7iECIz-sCoDor0QaRlep" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=MrAntares/roBrowserLegacy&type=date&legend=top-left&sealed_token=n-LYAsHxuqeB0pWAcr0VyUok1yv6L_vgDU_o45SAzDD0v8KE-9l9Mqlcr0dcnX606Bg9Yf_Coue-KXc4lhBj_dwAIAVmxloWaG5KiVlETd2asCYPRWu9-RzCKESTbAwZOolsyYjnA-IS6njNlSjYzTJfSDLMmT742KWezS2E7iECIz-sCoDor0QaRlep" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=MrAntares/roBrowserLegacy&type=date&legend=top-left&sealed_token=n-LYAsHxuqeB0pWAcr0VyUok1yv6L_vgDU_o45SAzDD0v8KE-9l9Mqlcr0dcnX606Bg9Yf_Coue-KXc4lhBj_dwAIAVmxloWaG5KiVlETd2asCYPRWu9-RzCKESTbAwZOolsyYjnA-IS6njNlSjYzTJfSDLMmT742KWezS2E7iECIz-sCoDor0QaRlep" />
- </picture>
-</a>
+Documentação técnica em [docs/](docs/README.md). O guia da pasta `client/` está em
+[docs/how-to/client-folder.md](docs/how-to/client-folder.md).
+
+## Licença e créditos
+
+Distribuído sob a [GNU GPL v3](LICENSE), a mesma licença do projeto em que se baseia.
+
+- [roBrowser](https://www.robrowser.com/), de Vincent Thibault
+- [roBrowserLegacy](https://github.com/MrAntares/roBrowserLegacy) e todos os seus
+  [contribuidores](https://github.com/MrAntares/roBrowserLegacy/graphs/contributors)
+- [roBrowserLegacy-RemoteClient-JS](https://github.com/FranciscoWallison/roBrowserLegacy-RemoteClient-JS),
+  que serviu de referência para o servidor de arquivos
+
+Ragnarok Online é marca da Gravity Co., Ltd. Este repositório não contém arquivos do jogo.
