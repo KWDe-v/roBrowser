@@ -1,0 +1,28 @@
+/AI/*
+# Game files: never committed. Only the System file names are kept.
+/client/*
+!/client/aliases.json
+/dist/
+/node_modules/
+/src/Plugins/*/
+/index.html
+Config.local.js
+/package-lock.json
+/GrannyModelViewer.js
+/GrfViewer.js
+/MapViewer.js
+/ModelViewer.js
+/Online.js
+/StrViewer.js
+/ThreadEventHandler.js
+/data/*
+/save/*
+
+# IDE files
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets

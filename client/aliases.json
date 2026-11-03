@@ -1,0 +1,16 @@
+{
+	"fontPath": "System/Font/",
+	"itemInfo": { "all": ["System/iteminfo/iteminfo1.lua", "System/iteminfo/iteminfo2.lua"] },
+	"petEvolution": ["System/PetEvolutionCln_true.lub"],
+	"mapInfo": ["System/mapInfo_true.lub"],
+	"questInfo": ["System/OngoingQuestInfoList_True.lub"],
+	"privateAirship": ["System/PrivateAirplane_true.lub"],
+	"townInfo": ["System/Towninfo.lub"],
+	"attendance": ["System/CheckAttendance.lub"],
+	"achievement": ["System/Achievement_list.lub"],
+
+	// Not official: translations some clients add
+	"signBoardTranslation": [],
+	"questTranslation": [],
+	"townInfoTranslation": []
+}

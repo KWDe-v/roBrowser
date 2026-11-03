@@ -1,0 +1,72 @@
+<div id="GuildCompanion">
+	<!-- The "you have no guild yet" pane. Its client counterpart, UIGuildTipWnd,
+	     is a scrollable tip list fed from client data rather than a two-button
+	     prompt, so this pane is a web affordance. It takes the client's caption
+	     for that window and the button bitmaps the client ships for it, under
+	     유저인터페이스\guild_helper. -->
+	<div class="win companion">
+		<div class="titlebar">
+			<ui-image src="basic_interface/titlebar_mid.bmp"></ui-image>
+			<span class="title"><ui-text msg="2078">Guild System</ui-text></span>
+			<div class="right">
+				<ui-button
+					class="base btn_x"
+					bg="basic_interface/sys_close_off.bmp"
+					hover="basic_interface/sys_close_on.bmp"
+				></ui-button>
+			</div>
+			<div class="clear"></div>
+		</div>
+		<div class="body">
+			<!-- No table id says this, so it is kept as a literal on purpose
+			     rather than forced onto an id that means something else. -->
+			<div class="msg">Join a guild or start your own!</div>
+			<div class="btns">
+				<ui-button
+					class="btn btn_create"
+					bg="guild_helper/create_guild.bmp"
+					hover="guild_helper/create_guild_a.bmp"
+					down="guild_helper/create_guild_b.bmp"
+				></ui-button>
+				<ui-button
+					class="btn btn_close"
+					bg="guild_helper/btn_ok.bmp"
+					hover="guild_helper/btn_ok_a.bmp"
+					down="guild_helper/btn_ok_b.bmp"
+				></ui-button>
+			</div>
+		</div>
+	</div>
+
+	<!-- One window for both create and disband, which is what the client does.
+	     The caption and the label are the only difference, so open() fills them
+	     and the markup carries neither.
+	     See docs/reference/guild/create-disband-dialogs.md -->
+	<div class="win namebox">
+		<div class="titlebar">
+			<ui-image src="basic_interface/titlebar_mid.bmp"></ui-image>
+			<span class="title name_title"></span>
+			<div class="right">
+				<ui-button
+					class="base btn_x2"
+					bg="basic_interface/sys_close_off.bmp"
+					hover="basic_interface/sys_close_on.bmp"
+				></ui-button>
+			</div>
+			<div class="clear"></div>
+		</div>
+		<div class="body">
+			<div class="label name_label"></div>
+			<input type="text" class="guildname" maxlength="23" />
+			<div class="btns">
+				<ui-button class="btn btn_ok" bg="btn_ok.bmp" hover="btn_ok_a.bmp" down="btn_ok_b.bmp"></ui-button>
+				<ui-button
+					class="btn btn_cancel"
+					bg="btn_cancel.bmp"
+					hover="btn_cancel_a.bmp"
+					down="btn_cancel_b.bmp"
+				></ui-button>
+			</div>
+		</div>
+	</div>
+</div>
