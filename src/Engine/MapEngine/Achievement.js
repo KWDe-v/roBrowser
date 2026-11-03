@@ -17,9 +17,19 @@ import PACKET from 'Network/PacketStructure.js';
 import Session from 'Engine/SessionStorage.js';
 import UIManager from 'UI/UIManager.js';
 import Announce from 'UI/Components/Announce/Announce.js';
+import Equipment from 'UI/Components/Equipment/Equipment.js';
 import 'UI/Components/Achievement/Achievement.js';
 import EffectConst from 'DB/Effects/EffectConst.js';
 import EffectManager from 'Renderer/EffectManager.js';
+
+/**
+ * The titles a player owns come from their achievements: list them again
+ */
+function refreshTitles() {
+	if (typeof Equipment.loadTitles === 'function') {
+		Equipment.loadTitles();
+	}
+}
 
 function initSessionAchievement() {
 	if (!Session.Achievement) {
@@ -53,6 +63,7 @@ function onAllAchievementList(pkt) {
 
 	const ui = UIManager.components.Achievement;
 	if (ui) ui.updateHeaderAndView();
+	refreshTitles();
 }
 
 function onAchievementUpdate(pkt) {
@@ -94,16 +105,18 @@ function onAchievementUpdate(pkt) {
 
 	const ui = UIManager.components.Achievement;
 	if (ui) ui.updateHeaderAndView();
+	refreshTitles();
 }
 
 function onRequestAchievementRewardACK(pkt) {
-	// If the reward request was successful (failed === 0), mark it as claimed
-	if (pkt.failed === 0 && Session.Achievement && Session.Achievement.list[pkt.ach_id]) {
+	// The server answers 1 when it gave the reward, 0 when it refused: only then is it claimed
+	if (pkt.result === 1 && Session.Achievement && Session.Achievement.list[pkt.ach_id]) {
 		Session.Achievement.list[pkt.ach_id].reward = 1;
 	}
 
 	const ui = UIManager.components.Achievement;
 	if (ui) ui.updateHeaderAndView();
+	refreshTitles();
 }
 
 /**

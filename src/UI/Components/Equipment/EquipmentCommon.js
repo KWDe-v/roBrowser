@@ -998,9 +998,34 @@ export function createEquipment({
 	}
 
 	if (titles) {
+		/**
+		 * The titles the player owns. The server sends no title list: a title is the reward of an
+		 * achievement (reward.title in achievement_list.lub), and rAthena accepts it once that reward was
+		 * claimed (ZC_ALL_ACH_LIST / ZC_ACH_UPDATE `reward`).
+		 *
+		 * @return {number[]} title ids, ascending
+		 */
+		Component.getOwnedTitles = function () {
+			const owned = new Set();
+			const list = Session.Achievement ? Session.Achievement.list : {};
+			for (const id in list) {
+				const ach = list[id];
+				const titleId = ach && ach.reward && ach.info && ach.info.reward && ach.info.reward.title;
+				if (titleId) {
+					owned.add(titleId);
+				}
+			}
+			// The title worn, as the server confirmed it
+			if (_currentTitleId) {
+				owned.add(_currentTitleId);
+			}
+			return Array.from(owned).sort((a, b) => a - b);
+		};
+
 		Component.loadTitles = function () {
+			// Achievements can arrive before the window is built: init() lists them then
 			const root = Component.getRoot();
-			const titleList = root.querySelector('#title_list');
+			const titleList = root && root.querySelector('#title_list');
 			if (!titleList) return;
 			titleList.innerHTML = '';
 
@@ -1012,20 +1037,17 @@ export function createEquipment({
 			removeEl.textContent = removeTitleText;
 			titleList.appendChild(removeEl);
 
-			const allTitles = DB.getAllTitles();
-			for (const titleId in allTitles) {
-				if (allTitles.hasOwnProperty(titleId)) {
-					const titleName = allTitles[titleId];
-					const selectedClass = parseInt(titleId) === _currentTitleId ? ' selected' : '';
-					const titleEl = document.createElement('div');
-					titleEl.className = `title-option${selectedClass}`;
-					titleEl.setAttribute('data-title', titleId);
-					titleEl.textContent = titleName;
-					titleList.appendChild(titleEl);
-				}
+			for (const titleId of Component.getOwnedTitles()) {
+				const selectedClass = titleId === _currentTitleId ? ' selected' : '';
+				const titleEl = document.createElement('div');
+				titleEl.className = `title-option${selectedClass}`;
+				titleEl.setAttribute('data-title', titleId);
+				titleEl.textContent = DB.getTitleString(titleId) || String(titleId);
+				titleList.appendChild(titleEl);
 			}
 
-			titleList.addEventListener('click', e => {
+			// Assigned, not added: the list is rebuilt on every change
+			titleList.onclick = e => {
 				const option = e.target.closest('.title-option');
 				if (option) {
 					e.preventDefault();
@@ -1033,7 +1055,7 @@ export function createEquipment({
 					const titleId = parseInt(option.getAttribute('data-title'));
 					Component.selectTitle(titleId);
 				}
-			});
+			};
 		};
 
 		Component.selectTitle = function (titleId) {

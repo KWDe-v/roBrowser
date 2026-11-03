@@ -13211,7 +13211,7 @@ PACKET.CZ.REQ_ACH_REWARD.size = 6;
 
 // 0xa26
 PACKET.ZC.REQ_ACH_REWARD_ACK = function PACKET_ZC_REQ_ACH_REWARD_ACK(fp, end) {
-	this.failed = fp.readUChar();
+	this.result = fp.readUChar(); // 1: reward given, 0: refused (rAthena clif_achievement_reward_ack)
 	this.ach_id = fp.readLong();
 };
 PACKET.ZC.REQ_ACH_REWARD_ACK.size = 7;
