@@ -231,15 +231,17 @@ describe('clientRoutes', () => {
 		expect(res.body.toString('latin1')).toBe('2345');
 	});
 
-	it('answers a batch with every file it found, in base64', async () => {
+	it('answers a batch with every file in base64, and null for a missing one', async () => {
 		const res = await request(routes, {
 			method: 'POST',
 			url: '/batch',
-			body: JSON.stringify({ files: ['data/loose.txt', 'data/missing.txt'] })
+			body: JSON.stringify({ files: ['data/loose.txt', 'data/missing.txt', 'data/texture/mixed.bmp'] })
 		});
 		const json = JSON.parse(res.body.toString('utf8'));
-		expect(Object.keys(json)).toEqual(['data/loose.txt']);
+		expect(Object.keys(json)).toEqual(['data/loose.txt', 'data/missing.txt', 'data/texture/mixed.bmp']);
 		expect(Buffer.from(json['data/loose.txt'], 'base64').toString('latin1')).toBe('loose copy');
+		expect(json['data/missing.txt']).toBeNull();
+		expect(Buffer.from(json['data/texture/mixed.bmp'], 'base64').toString('latin1')).toBe('bitmap');
 	});
 
 	it('rejects a batch without a file list', async () => {

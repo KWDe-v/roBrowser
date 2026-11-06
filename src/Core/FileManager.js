@@ -41,6 +41,9 @@ if (isElectron) {
 const _batchQueue = [];
 let _batchTimer = null;
 
+/** Most files one batch request asks for: the Remote Client refuses more. */
+const BATCH_MAX_FILES = 50;
+
 /**
  * FileManager namespace
  */
@@ -231,8 +234,9 @@ class FileManager {
 				}
 
 				// Not in GRFs ? Try to load it from
-				// remote client host
-				FileManager.getHTTP(filename, callback);
+				// remote client host, grouped with the files asked for at the same time:
+				// a window's art arrives at once instead of a few files at a time
+				FileManager.getBatchHTTP(filename, callback);
 			}
 		);
 	}
@@ -314,8 +318,8 @@ class FileManager {
 	}
 
 	static getBatchHTTP(filename, callback) {
-		// Only batch when using remote client
-		if (!FileManager.remoteClient) {
+		// Only batch when using remote client. Sounds are played from their URL (getHTTP)
+		if (!FileManager.remoteClient || typeof fetch === 'undefined' || filename.match(/\.(mp3|wav)$/)) {
 			FileManager.getHTTP(filename, callback);
 			return;
 		}
@@ -327,49 +331,67 @@ class FileManager {
 				const queue = _batchQueue.splice(0);
 				_batchTimer = null;
 
-				// Single file - no need to batch
-				if (queue.length === 1) {
-					FileManager.getHTTP(queue[0].filename, queue[0].callback);
-					return;
+				for (let i = 0; i < queue.length; i += BATCH_MAX_FILES) {
+					FileManager.sendBatch(queue.slice(i, i + BATCH_MAX_FILES));
 				}
-
-				const files = queue.map(q => {
-					return q.filename.replace(/\\/g, '/');
-				});
-
-				fetch(FileManager.remoteClient + 'batch', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ files: files })
-				})
-					.then(r => {
-						return r.json();
-					})
-					.then(results => {
-						queue.forEach(q => {
-							const key = q.filename.replace(/\\/g, '/');
-							if (results[key]) {
-								const binary = atob(results[key]);
-								const buffer = new ArrayBuffer(binary.length);
-								const view = new Uint8Array(buffer);
-								for (let i = 0; i < binary.length; i++) {
-									view[i] = binary.charCodeAt(i);
-								}
-								q.callback(buffer);
-								FileSystem.saveFile(q.filename, buffer);
-							} else {
-								q.callback(null, "Can't get file");
-							}
-						});
-					})
-					.catch(() => {
-						// Fallback: load individually
-						queue.forEach(q => {
-							FileManager.getHTTP(q.filename, q.callback);
-						});
-					});
 			}, 16); // Wait 1 frame (~16ms) to group requests
 		}
+	}
+
+	/**
+	 * Ask the remote client for several files in one request.
+	 *
+	 * The answer maps each path to its content in base64, or to null when the client does not have it.
+	 * A file the answer leaves out (the server capped the response size, or answers without nulls) is
+	 * asked for on its own, as is every file when the batch request fails.
+	 *
+	 * @param {Array<{filename: string, callback: function}>} queue
+	 */
+	static sendBatch(queue) {
+		// Single file - no need to batch
+		if (queue.length === 1) {
+			FileManager.getHTTP(queue[0].filename, queue[0].callback);
+			return;
+		}
+
+		const files = queue.map(q => q.filename.replace(/\\/g, '/'));
+
+		fetch(FileManager.remoteClient + 'batch', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ files: files })
+		})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('HTTP ' + response.status);
+				}
+				return response.json();
+			})
+			.then(results => {
+				queue.forEach((q, index) => {
+					const content = results[files[index]];
+
+					if (typeof content === 'string') {
+						const binary = atob(content);
+						const view = new Uint8Array(binary.length);
+						for (let i = 0; i < binary.length; i++) {
+							view[i] = binary.charCodeAt(i);
+						}
+						q.callback(view.buffer);
+						FileSystem.saveFile(q.filename, view.buffer);
+					} else if (content === null) {
+						q.callback(null, "Can't get file");
+					} else {
+						FileManager.getHTTP(q.filename, q.callback);
+					}
+				});
+			})
+			.catch(() => {
+				// Fallback: load individually
+				queue.forEach(q => {
+					FileManager.getHTTP(q.filename, q.callback);
+				});
+			});
 	}
 
 	/**

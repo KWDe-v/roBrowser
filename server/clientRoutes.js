@@ -127,19 +127,25 @@ export default function createClientRoutes(files, { enableSearch = true } = {}) 
 			return;
 		}
 
+		// Read at once, answered in order. A missing file is null; one past the size budget is left out,
+		// and the client asks for it on its own (FileManager.sendBatch).
+		const names = list.filter(filename => typeof filename === 'string');
+		const contents = await Promise.all(names.map(filename => files.getFile(filename)));
+
 		const results = {};
 		let total = 0;
-		for (const filename of list) {
-			if (typeof filename !== 'string') {
-				continue;
+		names.forEach((filename, index) => {
+			const content = contents[index];
+			if (!content) {
+				results[filename] = null;
+				return;
 			}
-			const content = await files.getFile(filename);
-			if (!content || total + content.length > MAX_BATCH_BYTES) {
-				continue;
+			if (total + content.length > MAX_BATCH_BYTES) {
+				return;
 			}
 			total += content.length;
 			results[filename] = Buffer.from(content.buffer, content.byteOffset, content.byteLength).toString('base64');
-		}
+		});
 
 		res.setHeader('Content-Type', 'application/json');
 		res.setHeader('Cache-Control', 'no-store');
